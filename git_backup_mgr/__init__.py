@@ -1,3 +1,5 @@
+from time import sleep
+
 from mcdreforged.api.all import *
 from git import Repo, InvalidGitRepositoryError
 from git_backup_mgr.config import Configure
@@ -21,6 +23,29 @@ def git_init() -> None:
 
 def create_backup():
     pass
+
+
+def creat_backup() -> None:
+    pass
+
+
+def auto_creat_backup(custom_time=0, default_time=1800, state=True) -> None:
+    """git add and git commit"""
+    creat_backup()
+    if custom_time == 0:
+        sleep(default_time)
+    else:
+        sleep(custom_time)
+    auto_creat_backup()
+
+
+def timer(time: int) -> None:
+    """
+    当执行这个函数时，该线程暂停time秒
+    :param time:
+    :return: None
+    """
+    sleep(time)
 
 
 def register_command(server: PluginServerInterface) -> None:
