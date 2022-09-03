@@ -21,22 +21,18 @@ def git_init() -> None:
         print("[GBM]初始化完成")
 
 
-def create_backup():
+def create_backup() -> None:
     pass
 
 
-def creat_backup() -> None:
-    pass
-
-
-def auto_creat_backup(custom_time=0, default_time=1800, state=True) -> None:
+def auto_create_backup(custom_time=0, default_time=1800, state=True) -> None:
     """git add and git commit"""
-    creat_backup()
+    create_backup()
     if custom_time == 0:
         sleep(default_time)
     else:
         sleep(custom_time)
-    auto_creat_backup()
+    auto_create_backup()
 
 
 def timer(time: int) -> None:
@@ -77,7 +73,7 @@ def register_command(server: PluginServerInterface) -> None:
         then(
             Literal("back").
             then(
-                Integer("id")
+                Text("version")
             )
         ).
         then(
@@ -100,8 +96,21 @@ def register_command(server: PluginServerInterface) -> None:
             then(
                 Literal("address").
                 then(
-                    GreedyText("address")
+                    QuotableText("address")
                 )
+            )
+        ).
+        then(
+            Literal("timed").
+            then(
+                Literal("enable")
+            ).
+            then(
+                Literal("disable")
+            ).
+            then(
+                Literal("overlay").
+                then(Integer("overlay"))
             )
         )
     )
