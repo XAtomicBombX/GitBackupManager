@@ -1,0 +1,11 @@
+{
+    "id": "git_backup_mgr",
+    "version": "0.0.1",
+    "name": "GitBackupManager",
+    "description": "一个MCDReforged插件,使用Git备份",
+    "author": "XFanblueX",
+    "link": "https://github.com/XAtomicBombX/GitBackupManager",
+    "dependencies": {
+        "mcdreforged": ">=2.0.0"
+    }
+}
