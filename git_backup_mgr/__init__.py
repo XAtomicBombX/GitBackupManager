@@ -18,7 +18,7 @@ class Events:
 
 def load_config(server: PluginServerInterface):
     global config
-    server.load_config_simple(file_name=CONFIG_FILE_NAME, default_config=Configure, target_class=Configure)
+    config = server.load_config_simple(file_name=CONFIG_FILE_NAME, target_class=Configure)
 
 
 def git_init() -> None:
@@ -39,10 +39,14 @@ def git_init() -> None:
         git.remote('add', 'origin', config.remote_origin)
         global remote
         remote = repo.remote()
+    with open(config.server_path+'/.gitignore') as f:
+        for i in config.saves:
+            for j in config.ignored_files:
+                f.write(f"{i}/{j}\n")
 
 
 @new_thread("GBM Backup Thread")
-def create_backup(server: ServerInterface, comment) -> None:
+def create_backup(server: ServerInterface, comment='无备注') -> None:
     server.say("[GBM]正在备份...")
     for worlds in config.saves:
         git.add(worlds)
@@ -104,7 +108,7 @@ def register_command(server: PluginServerInterface) -> None:
             Literal("init").runs(git_init)
         ).
         then(
-            Literal("make").
+            Literal("make").runs(lambda src: create_backup(src.get_server())).
             then(
                 GreedyText("comment").runs(lambda src, ctx: create_backup(src.get_server(), ctx["comment"]))
             )
@@ -156,5 +160,6 @@ def register_command(server: PluginServerInterface) -> None:
 
 
 def on_load(server:ServerInterface,prev):
+    load_config(server.as_plugin_server_interface())
     git_init()
     register_command(server.as_plugin_server_interface())
