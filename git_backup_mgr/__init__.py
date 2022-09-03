@@ -153,3 +153,8 @@ def register_command(server: PluginServerInterface) -> None:
             )
         )
     )
+
+
+def on_load(server:ServerInterface):
+    git_init()
+    register_command(server.as_plugin_server_interface())
