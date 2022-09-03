@@ -14,7 +14,9 @@ def git_init() -> None:
     try:
         repo = Repo(Configure.server_path)
     except InvalidGitRepositoryError:
+        print("[GBM]正在初始化.git文件夹...")
         repo = Repo.init(Configure.server_path)
+        print("[GBM]初始化完成")
 
 
 def create_backup():
