@@ -6,6 +6,6 @@
     "author": "XFanblueX",
     "link": "https://github.com/XAtomicBombX/GitBackupManager",
     "dependencies": {
-        "mcdreforged": ">=2.0.0"
+        "mcdreforged": "~=2.5.1"
     }
 }
