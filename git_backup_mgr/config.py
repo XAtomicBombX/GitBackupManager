@@ -5,6 +5,9 @@ from mcdreforged.utils.serializer import Serializable
 
 class Configure(Serializable):
     server_path: str = "./server"
+    saves: List[str] = [
+        'world'
+    ]
     ignored_files: List[str] = [
         'session.lock'
     ]
@@ -17,7 +20,7 @@ class Configure(Serializable):
     remote_origin: str = 'example.com'  # 远程Git仓库地址
 
     timed_backup = True  # 自动备份开关
-    backup_overlay = 30  # 备份间隔(分钟)默认为30min
+    backup_interval = 30  # 备份间隔(分钟)默认为30min
 
     permissions: Dict[str, int] = {
         'init': 2,
