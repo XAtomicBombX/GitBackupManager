@@ -4,10 +4,13 @@ from mcdreforged.utils.serializer import Serializable
 
 
 class Configure(Serializable):
+    """服务器位置"""
     server_path: str = "./server"
+    """存档位置,有多个存档的情况可自行添加"""
     saves: List[str] = [
         'world'
     ]
+    """各存档文件夹中忽略的文件"""
     ignored_files: List[str] = [
         'session.lock'
     ]
