@@ -25,8 +25,8 @@ class Configure(Serializable):
     remote_backup: bool = False  # 远程备份开关
     remote_origin: str = 'example.com'  # 远程Git仓库地址
 
-    timed_backup = True  # 自动备份开关
-    backup_interval = 30  # 备份间隔(分钟)默认为30min
+    timed_backup: bool = True  # 自动备份开关
+    backup_interval: float = 30.0  # 备份间隔(分钟)默认为30min
 
     permissions: Dict[str, int] = {
         'init': 2,
