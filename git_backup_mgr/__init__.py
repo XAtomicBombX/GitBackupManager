@@ -9,6 +9,8 @@ git: Repo.git
 remote: Repo.remote
 config: Configure
 CONFIG_FILE_NAME: str = "GitBackupManager.json"
+game_saved: bool = False
+plugin_unloaded: bool = False
 
 
 class Events:
@@ -59,24 +61,34 @@ def git_init() -> None:
 
 @new_thread("GBM Backup Thread")
 def create_backup(source: CommandSource, comment='无') -> None:
-    print_msg(source, "[GBM]正在备份...")
-    for worlds in config.saves:
-        git.add(worlds)
-    while True:
-        break
-    t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    comment = f"{t} 备注:{comment}"
-    git.commit('-m', comment)
-    print_msg(source, "备份完成!")
-    if config.remote_backup:
-        print_msg(source, "正在上传...")
-        try:
+    try:
+        print_msg(source, "[GBM]正在备份...")
+        source.get_server().execute("save-off")
+        source.get_server().execute("save-all flush")
+        while True:
+            time.sleep(0.01)
+            if game_saved:
+                break
+            if plugin_unloaded:
+                print_msg(source, "插件被卸载,备份取消")
+                return
+        for worlds in config.saves:
+            git.add(worlds)
+        t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        comment = f"{t} 备注:{comment}"
+        git.commit('-m', comment)
+        print_msg(source, "备份完成!")
+        if config.remote_backup:
+            print_msg(source, "正在上传...")
             git.push('master')
-        except Exception:
-            print_msg(source, f"发生错误!错误为:{Exception}")
-            print_msg(source, "请根据控制台日志排除错误原因!")
-        else:
             print_msg(source, "上传完成!")
+    except Exception as e:
+        print_msg(source, f"发生错误!错误为:{e}")
+        print_msg(source, "请根据控制台日志排除错误原因!")
+    else:
+        pass  # 此处应发出事件Events.backup_done WIP
+    finally:
+        source.get_server().execute("save-on")
 
 
 """此自动备份函数已弃用,新自动备份参见timer.py"""
