@@ -75,6 +75,7 @@ def create_backup(source: CommandSource, comment='无') -> None:
             if plugin_unloaded:
                 print_msg(source, "插件被卸载,备份取消")
                 return
+        time.sleep(0.01)
         for worlds in config.saves:
             git.add(worlds)
         t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -88,8 +89,7 @@ def create_backup(source: CommandSource, comment='无') -> None:
             git.push('master')
             print_msg(source, "上传完成!")
     except Exception as e:
-        print_msg(source, f"发生错误!错误为:{e}")
-        print_msg(source, "请根据控制台日志排除错误原因!")
+        print_msg(source, f"发生错误!错误为:\n{e}")
     else:
         pass  # 此处应发出事件Events.backup_done WIP
     finally:
