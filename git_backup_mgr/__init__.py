@@ -81,7 +81,7 @@ def create_backup(source: CommandSource, comment='无') -> None:
         comment = f"{t} 备注:{comment}"
         git.commit('-m', comment)
         end_time = time.time()
-        print_msg(source, ("备份完成! 耗时{}秒", round(end_time - start_time, 1)))
+        print_msg(source, (f"备份完成! 耗时{0}秒", round(end_time - start_time, 1)))
         if config.remote_backup:
             print_msg(source, "正在上传...")
             git.push('master')
