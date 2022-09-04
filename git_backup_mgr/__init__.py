@@ -21,6 +21,14 @@ def load_config(server: PluginServerInterface):
     config = server.load_config_simple(file_name=CONFIG_FILE_NAME, target_class=Configure)
 
 
+def print_msg(source: CommandSource, msg, prefix='[GBM]'):
+    msg = RTextList(prefix, msg)
+    if source.is_player:
+        source.get_server().say(msg)
+    else:
+        source.reply(msg)
+
+
 def git_init() -> None:
     """
     当不存在.git路径时自动init
@@ -39,30 +47,30 @@ def git_init() -> None:
         git.remote('add', 'origin', config.remote_origin)
         global remote
         remote = repo.remote()
-    with open(config.server_path+'/.gitignore') as f:
+    with open(config.server_path + '/.gitignore') as f:
         for i in config.saves:
             for j in config.ignored_files:
                 f.write(f"{i}/{j}\n")
 
 
 @new_thread("GBM Backup Thread")
-def create_backup(server: ServerInterface, comment='无备注') -> None:
-    server.say("[GBM]正在备份...")
+def create_backup(source: CommandSource, comment='无') -> None:
+    print_msg(source, "[GBM]正在备份...")
     for worlds in config.saves:
         git.add(worlds)
     while True:
         break
     git.commit('-m', comment)
-    server.say("[GBM]备份完成!")
+    print_msg(source, "[GBM]备份完成!")
     if config.remote_backup:
-        server.say("[GBM]正在上传...")
+        print_msg(source, "[GBM]正在上传...")
         try:
             git.push('master')
         except Exception:
-            server.say(f"[GBM]发生错误!错误为:{Exception}")
-            server.say("[GBM]请根据控制台日志排除错误原因!")
+            print_msg(source, f"[GBM]发生错误!错误为:{Exception}")
+            print_msg(source, "[GBM]请根据控制台日志排除错误原因!")
         else:
-            server.say("[GBM]上传完成!")
+            print_msg(source, "[GBM]上传完成!")
 
 
 """此自动备份函数已弃用,新自动备份参见timer.py"""
@@ -108,9 +116,9 @@ def register_command(server: PluginServerInterface) -> None:
             Literal("init").runs(git_init)
         ).
         then(
-            Literal("make").runs(lambda src: create_backup(src.get_server())).
+            Literal("make").runs(lambda src: create_backup(src)).
             then(
-                GreedyText("comment").runs(lambda src, ctx: create_backup(src.get_server(), ctx["comment"]))
+                GreedyText("comment").runs(lambda src, ctx: create_backup(src, ctx["comment"]))
             )
         ).
         then(
@@ -159,7 +167,7 @@ def register_command(server: PluginServerInterface) -> None:
     )
 
 
-def on_load(server:ServerInterface,prev):
+def on_load(server: ServerInterface, prev):
     load_config(server.as_plugin_server_interface())
     git_init()
     register_command(server.as_plugin_server_interface())
