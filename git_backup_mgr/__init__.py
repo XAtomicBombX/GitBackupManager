@@ -53,7 +53,7 @@ def git_init() -> None:
         git.remote('add', 'origin', config.remote_origin)
         global remote
         remote = repo.remote()
-    with open((config.server_path+'/.gitignore'), 'w+') as f:
+    with open((config.server_path + '/.gitignore'), 'w+') as f:
         for i in config.saves:
             for j in config.ignored_files:
                 f.write(f"{i}/{j}\n")
@@ -64,7 +64,6 @@ def create_backup(source: CommandSource, comment='无') -> None:
     try:
         print_msg(source, "[GBM]正在备份...")
         start_time = time.time()
-
 
         # 备份开始
         source.get_server().execute("save-off")
@@ -82,7 +81,7 @@ def create_backup(source: CommandSource, comment='无') -> None:
         comment = f"{t} 备注:{comment}"
         git.commit('-m', comment)
         end_time = time.time()
-        print_msg(source, ("备份完成! 耗时{}秒",round(end_time - start_time, 1)))
+        print_msg(source, ("备份完成! 耗时{}秒", round(end_time - start_time, 1)))
         if config.remote_backup:
             print_msg(source, "正在上传...")
             git.push('master')
@@ -190,7 +189,19 @@ def register_command(server: PluginServerInterface) -> None:
     )
 
 
+def on_info(server: PluginServerInterface, info: Info):
+    if not info.is_user:
+        if info.content in config.saved_world_keywords:
+            global game_saved
+            game_saved = True
+
+
 def on_load(server: ServerInterface, prev):
     load_config(server.as_plugin_server_interface())
     git_init()
     register_command(server.as_plugin_server_interface())
+
+
+def on_unload(server: ServerInterface):
+    global plugin_unloaded
+    plugin_unloaded = True
