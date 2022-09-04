@@ -1,3 +1,5 @@
+import time
+
 from mcdreforged.api.all import *
 from git import Repo, InvalidGitRepositoryError
 from git_backup_mgr.config import Configure
@@ -43,11 +45,13 @@ def git_init() -> None:
         print("[GBM]初始化完成")
     global git
     git = repo.git
+    git.config("user.name", f'"{config.user_name}"')
+    git.config("user.email", f'"{config.user_email}"')
     if config.remote_backup:
         git.remote('add', 'origin', config.remote_origin)
         global remote
         remote = repo.remote()
-    with open(config.server_path + '/.gitignore') as f:
+    with open((config.server_path+'/.gitignore'), 'w+') as f:
         for i in config.saves:
             for j in config.ignored_files:
                 f.write(f"{i}/{j}\n")
@@ -60,17 +64,19 @@ def create_backup(source: CommandSource, comment='无') -> None:
         git.add(worlds)
     while True:
         break
+    t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    comment = f"{t} 备注:{comment}"
     git.commit('-m', comment)
-    print_msg(source, "[GBM]备份完成!")
+    print_msg(source, "备份完成!")
     if config.remote_backup:
-        print_msg(source, "[GBM]正在上传...")
+        print_msg(source, "正在上传...")
         try:
             git.push('master')
         except Exception:
-            print_msg(source, f"[GBM]发生错误!错误为:{Exception}")
-            print_msg(source, "[GBM]请根据控制台日志排除错误原因!")
+            print_msg(source, f"发生错误!错误为:{Exception}")
+            print_msg(source, "请根据控制台日志排除错误原因!")
         else:
-            print_msg(source, "[GBM]上传完成!")
+            print_msg(source, "上传完成!")
 
 
 """此自动备份函数已弃用,新自动备份参见timer.py"""
