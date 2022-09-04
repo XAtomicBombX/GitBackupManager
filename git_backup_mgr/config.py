@@ -19,6 +19,9 @@ class Configure(Serializable):
         'Saved the world',  # 1.12-
     ]
 
+    user_name: str = "ExampleUser"
+    user_email: str = "example@example.com"
+
     remote_backup: bool = False  # 远程备份开关
     remote_origin: str = 'example.com'  # 远程Git仓库地址
 
