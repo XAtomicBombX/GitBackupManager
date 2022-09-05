@@ -1,4 +1,5 @@
 import time
+from typing import Any
 
 from mcdreforged.api.all import *
 from git import Repo, InvalidGitRepositoryError
@@ -11,13 +12,19 @@ config: Configure
 CONFIG_FILE_NAME: str = "GitBackupManager.json"
 game_saved: bool = False
 plugin_unloaded: bool = False
-
+confirm_backup: bool = False
+abort_backup: bool = False
 
 class Events:
     backup_done = LiteralEvent("git_backup_mgr.backup_done")
     backup_trig = LiteralEvent("git_backup_mgr.backup_trig")
     restore_done = LiteralEvent("git_backup_mgr.restore_done")
     restore_trig = LiteralEvent("git_backup_mgr.restore_trig")
+
+
+def click_run_cmd(msg: Any, txt: Any, cmd: str) ->RTextBase:
+    proceed_msg = msg.copy() if isinstance(msg,RTextBase) else RText(msg)
+    return proceed_msg.set_click_event(RAction.run_command,cmd).set_hover_text(txt)
 
 
 def load_config(server: PluginServerInterface):
@@ -78,8 +85,8 @@ def create_backup(source: CommandSource, comment='无') -> None:
         time.sleep(0.01)
         for worlds in config.saves:
             git.add(worlds)
-        t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        comment = f"{t} 备注:{comment}"
+        backup_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        comment = f"{backup_time} 备注:{comment}"
         git.commit('-m', comment)
         end_time = time.time()
         time_difference = round(end_time - start_time, 1)
@@ -94,6 +101,22 @@ def create_backup(source: CommandSource, comment='无') -> None:
         pass  # 此处应发出事件Events.backup_done WIP
     finally:
         source.get_server().execute("save-on")
+
+
+def restore_backup(source:CommandSource, version="HEAD^"):
+    if version == "HEAD^":
+        version = git.log("-1", '--pretty=format:%h')
+        comment = git.log("-1", '--pretty=format:%s')
+    else:
+        pass
+        # 获取特定版本comment, WIP
+    print_msg(source, f"正在回退至§2{version}§r版本:[{comment}]")
+    while True:
+        if confirm_backup:
+            break
+        if abort_backup:
+            return
+
 
 
 """此自动备份函数已弃用,新自动备份参见timer.py"""
