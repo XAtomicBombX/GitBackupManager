@@ -2,7 +2,7 @@ import time
 from typing import Any
 
 from mcdreforged.api.all import *
-from git import Repo, InvalidGitRepositoryError
+from git import Repo, InvalidGitRepositoryError, GitCommandError
 from git_backup_mgr.config import Configure
 
 repo: Repo
@@ -15,6 +15,7 @@ plugin_unloaded: bool = False
 confirm_backup: bool = False
 abort_backup: bool = False
 
+
 class Events:
     backup_done = LiteralEvent("git_backup_mgr.backup_done")
     backup_trig = LiteralEvent("git_backup_mgr.backup_trig")
@@ -22,9 +23,9 @@ class Events:
     restore_trig = LiteralEvent("git_backup_mgr.restore_trig")
 
 
-def click_run_cmd(msg: Any, txt: Any, cmd: str) ->RTextBase:
-    proceed_msg = msg.copy() if isinstance(msg,RTextBase) else RText(msg)
-    return proceed_msg.set_click_event(RAction.run_command,cmd).set_hover_text(txt)
+def click_run_cmd(msg: Any, txt: Any, cmd: str) -> RTextBase:
+    proceed_msg = msg.copy() if isinstance(msg, RTextBase) else RText(msg)
+    return proceed_msg.set_click_event(RAction.run_command, cmd).set_hover_text(txt)
 
 
 def load_config(server: PluginServerInterface):
@@ -103,20 +104,24 @@ def create_backup(source: CommandSource, comment='无') -> None:
         source.get_server().execute("save-on")
 
 
-def restore_backup(source:CommandSource, version="HEAD^"):
+@new_thread("GBM Restore Thread")
+def restore_backup(source: CommandSource, version="HEAD^"):
     if version == "HEAD^":
         version = git.log("-1", '--pretty=format:%h')
         comment = git.log("-1", '--pretty=format:%s')
     else:
-        pass
-        # 获取特定版本comment, WIP
+        try:
+            comment = git.log("-1", "--pretty=format:%s", version)
+        except GitCommandError:
+            print_msg(source, "§c发生错误!请检查指定版本是否存在!")
+            return
     print_msg(source, f"正在回退至§2{version}§r版本:[{comment}]")
     while True:
         if confirm_backup:
             break
         if abort_backup:
             return
-
+    print_msg(source, "回退测试成功")  # 此处应为还原函数_create_backup, WIP
 
 
 """此自动备份函数已弃用,新自动备份参见timer.py"""
@@ -168,9 +173,9 @@ def register_command(server: PluginServerInterface) -> None:
             )
         ).
         then(
-            Literal("back").
+            Literal("back").runs(lambda src: restore_backup(src)).
             then(
-                Text("version")
+                Text("version").runs(lambda src, ctx: restore_backup(src, ctx["version"]))
             )
         ).
         then(
