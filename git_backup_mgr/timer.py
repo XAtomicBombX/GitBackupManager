@@ -1,9 +1,9 @@
 import time
 from threading import Thread, Event
 
-from mcdreforged.plugin.server_interface import PluginServerInterface
+from mcdreforged.api.all import *
 
-from git_backup_mgr import Events, broadcast_msg
+from git_backup_mgr import Events
 
 
 class TimedBackup(Thread):
@@ -28,13 +28,20 @@ class TimedBackup(Thread):
     def reset_timer(self):
         self.time_last_backup = time.time()
 
+    def broadcast(self, msg, prefix='[GBM]'):
+        msg = RTextList(prefix, msg)
+        if self.server.is_server_startup():
+            self.server.broadcast(msg)
+        else:
+            self.server.logger.info(msg)
+
     def broadcast_next_backup_time(self):
         next_backup_time = time.strftime("%Y/%m/%d %H:%M:%S",
                                          time.localtime(self.time_last_backup + self.get_interval()))
-        broadcast_msg(self.server, f"下次自动备份时间:{next_backup_time}")
+        self.broadcast(f"下次自动备份时间:{next_backup_time}")
 
     def on_backup_created(self):
-        broadcast_msg(self.server, "检测到新增备份,重置计时器")
+        self.broadcast("检测到新增备份,重置计时器")
         self.reset_timer()
         self.broadcast_next_backup_time()
 
