@@ -242,7 +242,7 @@ def register_command(server: PluginServerInterface) -> None:
             )
         ).
         then(
-            Literal("timed").
+            Literal("timer").
             then(
                 Literal("enable")
             ).
