@@ -1,5 +1,5 @@
 import time
-from typing import Any
+from typing import Any, Optional
 
 from mcdreforged.api.all import *
 from git import Repo, InvalidGitRepositoryError, GitCommandError
@@ -22,6 +22,11 @@ class Events:
     backup_trig = LiteralEvent("git_backup_mgr.backup_trig")
     restore_done = LiteralEvent("git_backup_mgr.restore_done")
     restore_trig = LiteralEvent("git_backup_mgr.restore_trig")
+
+
+from git_backup_mgr.timer import TimedBackup
+
+timer = None  # type:Optional[TimedBackup]
 
 
 def click_run_cmd(msg: Any, tip: Any, cmd: str) -> RTextBase:
@@ -269,9 +274,16 @@ def on_load(server: ServerInterface, prev):
     load_config(server.as_plugin_server_interface())
     git_init()
     register_command(server.as_plugin_server_interface())
+    global timer
+    timer = TimedBackup(server.as_plugin_server_interface())
+    try:
+        timer.time_last_backup = prev.timer.time_last_backup
+    except (AttributeError, ValueError):
+        pass
+    timer.set_enabled(config.timed_backup)
+    timer.start()
 
 
 def on_unload(server: ServerInterface):
-    global plugin_unloaded, abort_restore
+    global plugin_unloaded
     plugin_unloaded = True
-    abort_restore = True
