@@ -4,6 +4,8 @@ from typing import Any, Optional
 from mcdreforged.api.all import *
 from git import Repo, InvalidGitRepositoryError, GitCommandError
 from git_backup_mgr.config import Configure
+from git_backup_mgr.timer import TimedBackup
+from git_backup_mgr.things import Events
 
 repo: Repo
 git: Repo.git
@@ -14,19 +16,8 @@ game_saved: bool = False
 plugin_unloaded: bool = False
 restore_version = None
 restore_comment = None
-abort_restore: bool = True
-
-
-class Events:
-    backup_done = LiteralEvent("git_backup_mgr.backup_done")
-    backup_trig = LiteralEvent("git_backup_mgr.backup_trig")
-    restore_done = LiteralEvent("git_backup_mgr.restore_done")
-    restore_trig = LiteralEvent("git_backup_mgr.restore_trig")
-
-
-from git_backup_mgr.timer import TimedBackup
-
 timer = None  # type:Optional[TimedBackup]
+abort_restore: bool = True
 
 
 def click_run_cmd(msg: Any, tip: Any, cmd: str) -> RTextBase:
@@ -75,6 +66,8 @@ def git_init() -> None:
 
 @new_thread("GBM Backup Thread")
 def create_backup(source: CommandSource, comment='无') -> None:
+    global game_saved
+    game_saved = False
     try:
         print_msg(source, "正在备份...")
         start_time = time.time()
@@ -105,7 +98,7 @@ def create_backup(source: CommandSource, comment='无') -> None:
     except Exception as e:
         print_msg(source, f"发生错误!错误为:\n{e}")
     else:
-        pass  # 此处应发出事件Events.backup_done WIP
+        source.get_server().dispatch_event(Events.backup_done, (source, comment))
     finally:
         source.get_server().execute("save-on")
 
@@ -133,20 +126,25 @@ def restore_backup(source: CommandSource, version="HEAD^"):
 
 
 @new_thread("GBM Restore Thread")
-def _restore_backup(source, ver, com):
-    print_msg(source, f"10秒后关闭服务器并回退至版本{ver}!")
-    for cd in range(10):
-        print_msg(source,
-                  f"距离回退至{ver}还有{10 - cd}秒,版本信息:[{com}]"
-                  + ','
-                  + click_run_cmd("使用!!gb abort取消", "取消回退!", "!!gb abort")
-                  )
-        for i in range(10):
-            time.sleep(0.1)
-            if abort_restore:
-                print_msg(source, "回退被取消!")
-                return
-    print_msg(source, f"[DEBUG]{ver}[{com}]")
+def _restore_backup(source: CommandSource, ver, com):
+    try:
+        print_msg(source, f"10秒后关闭服务器并回退至版本{ver}!")
+        for cd in range(10):
+            print_msg(source,
+                      f"距离回退至{ver}还有{10 - cd}秒,版本信息:[{com}]"
+                      + ','
+                      + click_run_cmd("使用!!gb abort取消", "取消回退!", "!!gb abort")
+                      )
+            for i in range(10):
+                time.sleep(0.1)
+                if abort_restore:
+                    print_msg(source, "回退被取消!")
+                    return
+        print_msg(source, f"[DEBUG]{ver}[{com}]")
+    except Exception as e:
+        print_msg(source, f"发生错误!错误为:\n{e}")
+    else:
+        source.get_server().dispatch_event(Events.restore_done, (source, ver, com))
 
 
 def _confirm_restore(source: CommandSource):
@@ -189,6 +187,12 @@ def _abort_restore(source: CommandSource):
 #     :return: None
 #     """
 #     sleep(time)
+
+
+def register_events(server: PluginServerInterface):
+    server.register_event_listener(Events.backup_trig, lambda svr, src, comment: create_backup(src, comment))
+    server.register_event_listener(Events.restore_trig, lambda svr, src, version: restore_backup(src, version))
+    server.register_event_listener(Events.backup_done, lambda svr, src, com: timer.on_backup_created())
 
 
 def register_command(server: PluginServerInterface) -> None:
@@ -274,6 +278,7 @@ def on_load(server: ServerInterface, prev):
     load_config(server.as_plugin_server_interface())
     git_init()
     register_command(server.as_plugin_server_interface())
+    register_events(server.as_plugin_server_interface())
     global timer
     timer = TimedBackup(server.as_plugin_server_interface())
     try:
@@ -287,3 +292,4 @@ def on_load(server: ServerInterface, prev):
 def on_unload(server: ServerInterface):
     global plugin_unloaded
     plugin_unloaded = True
+    timer.stop()

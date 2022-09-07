@@ -3,7 +3,7 @@ from threading import Thread, Event
 
 from mcdreforged.api.all import *
 
-from git_backup_mgr import Events
+from git_backup_mgr.things import Events
 
 
 class TimedBackup(Thread):
@@ -53,7 +53,8 @@ class TimedBackup(Thread):
                 if time.time() - self.time_last_backup > self.get_interval():
                     break
             if self.is_enabled and self.server.is_server_startup():
-                self.server.dispatch_event(Events.backup_trig, ())
+                self.broadcast(f"每{self.get_interval()}分钟一次的定时备份触发")
+                self.server.dispatch_event(Events.backup_trig, (self.server.get_plugin_command_source(), "GBM自动备份"))
 
     def stop(self):
         self.stop_event.set()
