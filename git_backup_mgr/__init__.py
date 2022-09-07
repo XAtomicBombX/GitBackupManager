@@ -42,7 +42,8 @@ def print_msg(source: CommandSource, msg, prefix='[GBM]'):
         source.reply(msg)
 
 
-def broadcast_msg(server: ServerInterface, msg):
+def broadcast_msg(server: ServerInterface, msg, prefix='[GBM]'):
+    msg = RTextList(prefix, msg)
     if server.is_server_startup():
         server.broadcast(msg)
     else:
