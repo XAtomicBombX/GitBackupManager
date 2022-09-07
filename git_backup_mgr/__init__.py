@@ -4,11 +4,13 @@ from typing import Any
 from mcdreforged.api.all import *
 from git import Repo, InvalidGitRepositoryError, GitCommandError
 from git_backup_mgr.config import Configure
+from git_backup_mgr.timer import TimedBackup
 
 repo: Repo
 git: Repo.git
 remote: Repo.remote
 config: Configure
+timer: TimedBackup
 CONFIG_FILE_NAME: str = "GitBackupManager.json"
 game_saved: bool = False
 plugin_unloaded: bool = False
@@ -276,6 +278,14 @@ def on_load(server: ServerInterface, prev):
     load_config(server.as_plugin_server_interface())
     git_init()
     register_command(server.as_plugin_server_interface())
+    global timer
+    timer = TimedBackup(server.as_plugin_server_interface())
+    try:
+        timer.time_last_backup = prev.timer.time_last_backup
+    except (AttributeError, ValueError):
+        pass
+    timer.set_enabled(config.timed_backup)
+    timer.start()
 
 
 def on_unload(server: ServerInterface):
