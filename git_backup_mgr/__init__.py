@@ -139,7 +139,7 @@ def _restore_backup(source, ver, com):
         for i in range(10):
             time.sleep(0.1)
             if abort_restore:
-                print_msg(source, "回退取消!")
+                print_msg(source, "回退被取消!")
                 return
     print_msg(source, f"[DEBUG]{ver}[{com}]")
 
@@ -161,6 +161,7 @@ def _abort_restore(source: CommandSource):
     restore_version = None
     restore_comment = None
     abort_restore = True
+    print_msg(source, "操作取消!")
 
 
 """此自动备份函数已弃用,新自动备份参见timer.py"""
@@ -271,5 +272,6 @@ def on_load(server: ServerInterface, prev):
 
 
 def on_unload(server: ServerInterface):
-    global plugin_unloaded
+    global plugin_unloaded, abort_restore
     plugin_unloaded = True
+    abort_restore = True
