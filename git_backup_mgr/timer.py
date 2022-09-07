@@ -3,7 +3,7 @@ from threading import Thread, Event
 
 from mcdreforged.plugin.server_interface import PluginServerInterface
 
-from git_backup_mgr import Events
+from git_backup_mgr import Events, broadcast_msg
 
 
 class TimedBackup(Thread):
@@ -21,8 +21,10 @@ class TimedBackup(Thread):
         from git_backup_mgr import config
         return config.backup_interval * 60
 
-    def on_backup(self):
-        pass
+    def broadcast_next_backup_time(self):
+        next_backup_time = time.strftime("%Y/%m/%d %H:%M:%S",
+                                         time.localtime(self.time_last_backup + self.get_interval()))
+        broadcast_msg(self.server, f"下次自动备份时间:{next_backup_time}")
 
     def auto_backup(self):
         while True:
