@@ -12,8 +12,9 @@ config: Configure
 CONFIG_FILE_NAME: str = "GitBackupManager.json"
 game_saved: bool = False
 plugin_unloaded: bool = False
-confirm_backup: bool = False
-abort_backup: bool = False
+restore_version = None
+restore_comment = None
+abort_restore: bool = True
 
 
 class Events:
@@ -23,9 +24,9 @@ class Events:
     restore_trig = LiteralEvent("git_backup_mgr.restore_trig")
 
 
-def click_run_cmd(msg: Any, txt: Any, cmd: str) -> RTextBase:
+def click_run_cmd(msg: Any, tip: Any, cmd: str) -> RTextBase:
     proceed_msg = msg.copy() if isinstance(msg, RTextBase) else RText(msg)
-    return proceed_msg.set_click_event(RAction.run_command, cmd).set_hover_text(txt)
+    return proceed_msg.set_hover_text(tip).set_click_event(RAction.run_command, cmd)
 
 
 def load_config(server: PluginServerInterface):
@@ -70,7 +71,7 @@ def git_init() -> None:
 @new_thread("GBM Backup Thread")
 def create_backup(source: CommandSource, comment='无') -> None:
     try:
-        print_msg(source, "[GBM]正在备份...")
+        print_msg(source, "正在备份...")
         start_time = time.time()
 
         # 备份开始
@@ -104,24 +105,62 @@ def create_backup(source: CommandSource, comment='无') -> None:
         source.get_server().execute("save-on")
 
 
-@new_thread("GBM Restore Thread")
 def restore_backup(source: CommandSource, version="HEAD^"):
-    if version == "HEAD^":
-        version = git.log("-1", '--pretty=format:%h')
-        comment = git.log("-1", '--pretty=format:%s')
-    else:
-        try:
+    global abort_restore
+    abort_restore = False
+    try:
+        if version == "HEAD^":
+            version = git.log("-1", '--pretty=format:%h')
+            comment = git.log("-1", '--pretty=format:%s')
+        else:
             comment = git.log("-1", "--pretty=format:%s", version)
-        except GitCommandError:
-            print_msg(source, "§c发生错误!请检查指定版本是否存在!")
-            return
+    except GitCommandError:
+        print_msg(source, "§c发生错误!请检查指定版本是否存在!")
+        return
+    global restore_version, restore_comment
+    restore_version = version
+    restore_comment = comment
     print_msg(source, f"正在回退至§2{version}§r版本:[{comment}]")
-    while True:
-        if confirm_backup:
-            break
-        if abort_backup:
-            return
-    print_msg(source, "回退测试成功")  # 此处应为还原函数_create_backup, WIP
+    print_msg(source,
+              click_run_cmd("使用!!gb confirm确认", "点击确认", "!!gb confirm")
+              + ','
+              + click_run_cmd("使用!!gb abort取消", "点击取消", "!!gb abort "))
+
+
+@new_thread("GBM Restore Thread")
+def _restore_backup(source, ver, com):
+    print_msg(source, f"10秒后关闭服务器并回退至版本{ver}!")
+    for cd in range(10):
+        print_msg(source,
+                  f"距离回退至{ver}还有{10 - cd}秒,版本信息:[{com}]"
+                  + ','
+                  + click_run_cmd("使用!!gb abort取消", "取消回退!", "!!gb abort")
+                  )
+        for i in range(10):
+            time.sleep(0.1)
+            if abort_restore:
+                print_msg(source, "回退取消!")
+                return
+    print_msg(source, f"[DEBUG]{ver}[{com}]")
+
+
+def _confirm_restore(source: CommandSource):
+    global restore_version, restore_comment
+    if restore_version is None:
+        print_msg(source, "没有操作需要确认!")
+    else:
+        version = restore_version
+        comment = restore_comment
+        restore_version = None
+        restore_comment = None
+        _restore_backup(source, version, comment)
+
+
+def _abort_restore(source: CommandSource):
+    global restore_version, restore_comment, abort_restore
+    restore_version = None
+    restore_comment = None
+    abort_restore = True
 
 
 """此自动备份函数已弃用,新自动备份参见timer.py"""
@@ -179,10 +218,10 @@ def register_command(server: PluginServerInterface) -> None:
             )
         ).
         then(
-            Literal("confirm")
+            Literal("confirm").runs(lambda src: _confirm_restore(src))
         ).
         then(
-            Literal("about")
+            Literal("abort").runs(lambda src: _abort_restore(src))
         ).
         then(
             Literal("list")
