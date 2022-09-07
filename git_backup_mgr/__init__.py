@@ -1,10 +1,9 @@
 import time
-from typing import Any
+from typing import Any, Optional
 
 from mcdreforged.api.all import *
 from git import Repo, InvalidGitRepositoryError, GitCommandError
 from git_backup_mgr.config import Configure
-
 
 repo: Repo
 git: Repo.git
@@ -16,7 +15,6 @@ plugin_unloaded: bool = False
 restore_version = None
 restore_comment = None
 abort_restore: bool = True
-timer = None
 
 
 class Events:
@@ -24,6 +22,11 @@ class Events:
     backup_trig = LiteralEvent("git_backup_mgr.backup_trig")
     restore_done = LiteralEvent("git_backup_mgr.restore_done")
     restore_trig = LiteralEvent("git_backup_mgr.restore_trig")
+
+
+from git_backup_mgr.timer import TimedBackup
+
+timer = None  # type:Optional[TimedBackup]
 
 
 def click_run_cmd(msg: Any, tip: Any, cmd: str) -> RTextBase:
@@ -42,14 +45,6 @@ def print_msg(source: CommandSource, msg, prefix='[GBM]'):
         source.get_server().say(msg)
     else:
         source.reply(msg)
-
-
-def broadcast_msg(server: ServerInterface, msg, prefix='[GBM]'):
-    msg = RTextList(prefix, msg)
-    if server.is_server_startup():
-        server.broadcast(msg)
-    else:
-        server.logger.info(msg)
 
 
 def git_init() -> None:
@@ -275,7 +270,6 @@ def on_info(server: PluginServerInterface, info: Info):
 
 
 def on_load(server: ServerInterface, prev):
-    from git_backup_mgr.timer import TimedBackup
     load_config(server.as_plugin_server_interface())
     git_init()
     register_command(server.as_plugin_server_interface())
@@ -289,6 +283,7 @@ def on_load(server: ServerInterface, prev):
     timer.start()
 
 
-def on_unload(server: ServerInterface):
-    global plugin_unloaded
+def on_unload(server: PluginServerInterface):
+    global plugin_unloaded, timer
     plugin_unloaded = True
+    timer.stop()
