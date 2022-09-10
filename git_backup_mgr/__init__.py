@@ -167,28 +167,6 @@ def _abort_restore(source: CommandSource):
     print_msg(source, "操作取消!")
 
 
-"""此自动备份函数已弃用,新自动备份参见timer.py"""
-
-
-# def auto_create_backup(custom_time=0, default_time=1800, state=True) -> None:
-#     """git add and git commit"""
-#     create_backup()
-#     if custom_time == 0:
-#         sleep(default_time)
-#     else:
-#         sleep(custom_time)
-#     auto_create_backup()
-#
-#
-# def timer(time: int) -> None:
-#     """
-#     当执行这个函数时，该线程暂停time秒
-#     :param time:
-#     :return: None
-#     """
-#     sleep(time)
-
-
 def register_events(server: PluginServerInterface):
     server.register_event_listener(Events.backup_trig, lambda svr, src, comment: create_backup(src, comment))
     server.register_event_listener(Events.restore_trig, lambda svr, src, version: restore_backup(src, version))
@@ -260,8 +238,8 @@ def register_command(server: PluginServerInterface) -> None:
                 Literal("disable")
             ).
             then(
-                Literal("overlay").
-                then(Integer("overlay"))
+                Literal("interval").
+                then(Float("interval"))
             )
         )
     )
