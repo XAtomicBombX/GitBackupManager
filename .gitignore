@@ -128,9 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre
 
-# Pycharm
-.idea/
-
 # MCDR
 *.mcdr
-MCDR/
