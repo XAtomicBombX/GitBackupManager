@@ -140,7 +140,14 @@ def _restore_backup(source: CommandSource, ver, com):
                 if abort_restore:
                     print_msg(source, "回退被取消!")
                     return
-        print_msg(source, f"[DEBUG]{ver}[{com}]")
+
+        source.get_server().stop()
+        source.get_server().as_plugin_server_interface().logger.info("正在等待服务器停止")
+        source.get_server().wait_for_start()
+        # 回退开始
+        git.restore()  # TODO 完善回退操作及防呆备份
+        # 回退结束
+        source.get_server().start()
     except Exception as e:
         print_msg(source, f"发生错误!错误为:\n{e}")
     else:
